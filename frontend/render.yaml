@@ -1,0 +1,7 @@
+type: static
+name: hop-ai
+buildCommand: npm run build
+startCommand: npm run preview
+env:
+  - key: NODE_ENV
+    value: production
