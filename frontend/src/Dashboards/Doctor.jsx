@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaUserMd, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
 const Doctor = () => {
   const [doctor, setDoctor] = useState({ name: '', email: '' });
@@ -20,7 +22,14 @@ const Doctor = () => {
 
   // Fetch doctor info and requests on mount
   useEffect(() => {
-    // Example: fetch('/api/doctor/me').then(...)
+    // Fetch doctor info from backend
+    axios.get('/api/doctor/me')
+      .then(res => {
+        setDoctor(res.data);
+      })
+      .catch(err => {
+        setDoctor({ name: '', email: '' });
+      });
     // Example: fetch('/api/doctor/requests').then(...)
     // Set doctor and requests from backend
   }, []);
@@ -32,6 +41,27 @@ const Doctor = () => {
       // Set messages from backend
     }
   }, [selectedUser]);
+
+  useEffect(() => {
+    const fetchDoctorData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data && response.data.user) {
+          setDoctor({
+            name: response.data.user.name,
+            email: response.data.user.email
+          });
+        }
+      } catch (error) {
+        // Optionally handle error
+      }
+    };
+    fetchDoctorData();
+  }, []);
 
   const handleSend = () => {
     if (!chatInput.trim() || !selectedUser) return;
@@ -103,7 +133,7 @@ const Doctor = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            WELCOME DOCTOR <span className="text-blue-700">{doctor.name || '...'}</span>
+            Welcome Doctor <span className="text-blue-700">{doctor.name || '...'}</span>
           </motion.h2>
           <motion.div
             className="w-full max-w-6xl h-[70vh] bg-white/80 rounded-3xl shadow-2xl flex flex-col sm:flex-row overflow-hidden border-4 border-blue-100"

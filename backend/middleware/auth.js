@@ -9,7 +9,7 @@ const auth = (req, res, next) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;
-    req.userType = decoded.userType;
+    req.role = decoded.role;
     next();
   } catch (error) {
     res.status(401).send({ error: 'Please authenticate.' });

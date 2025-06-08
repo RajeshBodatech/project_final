@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaSignOutAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from '../config/api';
+import axios from 'axios';
 
 const AnimatedBackground = () => (
   <div className="fixed inset-0 -z-10 overflow-hidden">
@@ -42,21 +44,44 @@ const Admin = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch doctors and users from backend (replace with real API)
+  // Fetch admin info on mount
   useEffect(() => {
-    // Replace with backend fetch
-    const docs = [
-      { id: 1, name: "Dr. Alice", email: "alice@hospital.com", phone: "1234567890", specialization: "Psychiatrist", type: "doctor" },
-      { id: 2, name: "Dr. Bob", email: "bob@hospital.com", phone: "9876543210", specialization: "Therapist", type: "doctor" },
-    ];
-    const usrs = [
-      { id: 1, name: "Charlie", email: "charlie@gmail.com", phone: "1112223333", age: 25, type: "user" },
-      { id: 2, name: "Daisy", email: "daisy@gmail.com", phone: "4445556666", age: 30, type: "user" },
-    ];
-    setDoctors(docs);
-    setUsers(usrs);
-    setContacts([...docs, ...usrs]);
+    const fetchAdminInfo = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        // Fetch admin info
+        const adminRes = await axios.get(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (adminRes.data && adminRes.data.user) {
+          setAdmin({ name: adminRes.data.user.name });
+        }
+      } catch (error) {
+        // Optionally handle error
+      }
+    };
+    fetchAdminInfo();
+    fetchDoctors(); // Fetch doctors by default on mount
   }, []);
+
+  // Fetch doctors
+  const fetchDoctors = async () => {
+    const token = localStorage.getItem('token');
+    const doctorsRes = await axios.get(`${API_BASE_URL}/admin/doctors`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setDoctors(doctorsRes.data);
+  };
+
+  // Fetch users
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('token');
+    const usersRes = await axios.get(`${API_BASE_URL}/admin/users`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setUsers(usersRes.data);
+  };
 
   // Fetch messages when a chat is selected
   useEffect(() => {
@@ -164,7 +189,10 @@ const Admin = () => {
                 ? "bg-blue-600 text-white scale-105"
                 : "bg-blue-100 text-blue-700 hover:bg-blue-200"
             }`}
-            onClick={() => setSelection("doctors")}
+            onClick={() => {
+              setSelection("doctors");
+              fetchDoctors();
+            }}
           >
             Doctors
           </button>
@@ -174,7 +202,10 @@ const Admin = () => {
                 ? "bg-green-600 text-white scale-105"
                 : "bg-green-100 text-green-700 hover:bg-green-200"
             }`}
-            onClick={() => setSelection("users")}
+            onClick={() => {
+              setSelection("users");
+              fetchUsers();
+            }}
           >
             Users
           </button>
@@ -196,21 +227,23 @@ const Admin = () => {
             <div className="flex-1 overflow-y-auto space-y-2">
               {(selection === "doctors" ? doctors : users).map((person) => (
                 <motion.div
-                  key={person.id}
-                  className={`flex items-center justify-between rounded-lg p-2 cursor-pointer transition ${
-                    selectedChat && selectedChat.id === person.id && selectedChat.type === person.type
+                  key={person.id || person.userId}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between rounded-lg p-2 cursor-pointer transition ${
+                    selectedChat && selectedChat.id === (person.id || person.userId) && selectedChat.type === person.type
                       ? "bg-blue-200 scale-105"
                       : "hover:bg-blue-100"
                   }`}
                   whileHover={{ scale: 1.03 }}
                 >
-                  <div>
+                  <div className="flex-1">
                     <div className={`font-semibold ${person.type === "doctor" ? "text-blue-900" : "text-green-900"}`}>
                       {person.name}
                     </div>
-                    <div className="text-xs text-gray-500">{person.email}</div>
+                    <div className="text-xs text-gray-500">User ID: {person.userId || person.id}</div>
+                    <div className="text-xs text-gray-500">Email: {person.email}</div>
+                    <div className="text-xs text-gray-500">Phone: {person.phoneNumber}</div>
                   </div>
-                  <div className="flex flex-col gap-1 items-end">
+                  <div className="flex flex-col gap-1 items-end mt-2 sm:mt-0">
                     <button
                       className="text-xs px-2 py-0.5 rounded bg-blue-500 text-white font-bold shadow hover:bg-blue-700 mb-1"
                       onClick={() => setViewDetails({ type: person.type, data: person })}
@@ -226,7 +259,7 @@ const Admin = () => {
                     {selection === "users" && (
                       <button
                         className="text-xs px-2 py-0.5 rounded bg-red-500 text-white font-bold shadow hover:bg-red-700 mt-1"
-                        onClick={() => handleDeleteUser(person.id)}
+                        onClick={() => handleDeleteUser(person.id || person.userId)}
                       >
                         Delete
                       </button>

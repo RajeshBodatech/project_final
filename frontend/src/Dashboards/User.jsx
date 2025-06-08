@@ -11,7 +11,25 @@ const User = () => {
   const [showChat, setShowChat] = useState(false);
   const [canLogout, setCanLogout] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showCategorySelection, setShowCategorySelection] = useState(true);
   const navigate = useNavigate();
+
+  const categories = [
+    { id: 'student', name: 'Students', prompt: 'Hi, I am a student. Please help me with my studies and provide guidance on my academic journey.' },
+    { id: 'housewife', name: 'House wife', prompt: 'Hi, I am a housewife. Please help me with managing my household and daily activities.' },
+    { id: 'software', name: 'Software employee', prompt: 'Hi, I am a software professional. Please help me with technical challenges and career development.' },
+    { id: 'faculty', name: 'Faculty', prompt: 'Hi, I am a faculty member. Please help me with teaching methodologies and academic research.' },
+    { id: 'business', name: 'Business man', prompt: 'Hi, I am a business person. Please help me with business strategies and management.' },
+    { id: 'doctor', name: 'Doctor', prompt: 'Hi, I am a medical professional. Please help me with healthcare-related queries and medical knowledge.' },
+    { id: 'bank', name: 'Bank employee', prompt: 'Hi, I am a bank employee. Please help me with financial matters and banking operations.' },
+    { id: 'agriculture', name: 'Agriculture workers', prompt: 'Hi, I am an agriculture worker. Please help me with farming techniques and agricultural practices.' },
+    { id: 'police', name: 'Police officers', prompt: 'Hi, I am a police officer. Please help me with law enforcement and public safety matters.' },
+    { id: 'govt', name: 'Govt employees', prompt: 'Hi, I am a government employee. Please help me with administrative and policy-related matters.' }
+  ];
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -49,6 +67,15 @@ const User = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Check if category is already selected in localStorage
+    const savedCategory = localStorage.getItem('selectedCategory');
+    if (savedCategory) {
+      setSelectedCategory(JSON.parse(savedCategory));
+      setShowCategorySelection(false);
+    }
+  }, []);
+
   // Button handlers
   const handleNav = (path) => navigate(path);
   const handleBot = () => setShowBot(true);
@@ -62,6 +89,102 @@ const User = () => {
       // Redirect to login page
       navigate('/login', { replace: true });
     }
+  };
+
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    setShowCategorySelection(false);
+    // Save category to localStorage
+    localStorage.setItem('selectedCategory', JSON.stringify(category));
+    // Set the category prompt in the message input
+    setMessage(category.prompt);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || isLoading) return;
+
+    const userMessage = message.trim();
+    setMessage('');
+    setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_BASE_URL}/bot/chat`,
+        {
+          message: userMessage,
+          category: selectedCategory.id
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (response.data && response.data.reply) {
+        setMessages(prev => [...prev, { type: 'bot', content: response.data.reply }]);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => [...prev, {
+        type: 'error',
+        content: error.response?.data?.error || 'Sorry, I encountered an error. Please try again.'
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  const testAPI = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API_BASE_URL}/bot/test`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      let message = 'API Test Results:\n\n';
+      message += `Main API: ${response.data.main_api.working ? '✅ Working' : '❌ Not Working'}\n`;
+      message += `Alternative API: ${response.data.alternative_api.working ? '✅ Working' : '❌ Not Working'}\n`;
+      message += `API Key: ${response.data.api_key_configured ? '✅ Configured' : '❌ Missing'}`;
+      
+      setMessages(prev => [...prev, { type: 'bot', content: message }]);
+    } catch (error) {
+      console.error('API Test Error:', error);
+      setMessages(prev => [...prev, { 
+        type: 'error', 
+        content: 'Failed to test API connection. Please check your internet connection and try again.'
+      }]);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    setMessages(prev => [...prev, { 
+      type: 'bot', 
+      content: 'Chat history cleared. How can I help you today?'
+    }]);
+  };
+
+  // Add resetCategory function
+  const resetCategory = () => {
+    setSelectedCategory(null);
+    setShowCategorySelection(true);
+    setMessages([]);
+    setMessage('');
+    localStorage.removeItem('selectedCategory');
   };
 
   return (
@@ -207,24 +330,115 @@ const User = () => {
                   exit={{ opacity: 0 }}
                 >
                   <motion.div
-                    className="bg-white rounded-2xl shadow-2xl w-[95vw] max-w-lg h-[80vh] flex flex-col"
+                    className="bg-white rounded-2xl shadow-2xl w-[95vw] max-w-4xl h-[90vh] flex flex-col"
                     initial={{ scale: 0.9, y: 40, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
                     exit={{ scale: 0.9, y: 40, opacity: 0 }}
                   >
-                    <div className="flex justify-between items-center px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-2xl">
-                      <h3 className="text-xl font-bold">AI Bot</h3>
+                    <div className="flex justify-between items-center px-8 py-6 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-t-2xl">
+                      <h3 className="text-2xl font-bold">🤖 ChatGPT Assistant</h3>
                       <button
                         onClick={() => setShowBot(false)}
-                        className="text-2xl font-bold hover:text-gray-200"
+                        className="text-3xl font-bold hover:text-gray-200"
                       >
                         &times;
                       </button>
                     </div>
-                    {/* Bot content will be handled by backend team */}
-                    <div className="flex-1 flex items-center justify-center text-gray-500 text-lg">
-                      Bot interface coming soon...
-                    </div>
+                    {showCategorySelection ? (
+                      <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                        <h4 className="text-xl font-semibold mb-6 text-center">Please select your category</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          {categories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategorySelect(category)}
+                              className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all text-left"
+                            >
+                              <span className="text-lg font-medium">{category.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-4 p-6 justify-center">
+                          <button
+                            onClick={testAPI}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg text-base transition-colors"
+                          >
+                            Test API
+                          </button>
+                          <button
+                            onClick={clearChat}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg text-base transition-colors"
+                          >
+                            Clear Chat
+                          </button>
+                          <button
+                            onClick={resetCategory}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-lg text-base transition-colors"
+                          >
+                            Change Category
+                          </button>
+                        </div>
+                        {/* Chat Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
+                          {messages.map((msg, index) => (
+                            <div
+                              key={index}
+                              className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div
+                                className={`max-w-[85%] rounded-lg p-4 text-lg ${
+                                  msg.type === 'user'
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-700 text-white'
+                                    : msg.type === 'error'
+                                    ? 'bg-red-100 text-red-800 border border-red-200'
+                                    : 'bg-white text-gray-800 border border-gray-200'
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                            </div>
+                          ))}
+                          {isLoading && (
+                            <div className="flex justify-start">
+                              <div className="bg-white text-gray-800 rounded-lg p-4 border border-gray-200">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-lg">ChatGPT is thinking</span>
+                                  <div className="flex gap-2">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {/* Message Input */}
+                        <form onSubmit={handleSendMessage} className="p-6 border-t">
+                          <div className="flex gap-4">
+                            <input
+                              type="text"
+                              value={message}
+                              onChange={(e) => setMessage(e.target.value)}
+                              onKeyPress={handleKeyPress}
+                              placeholder="Type your message here..."
+                              className="flex-1 p-4 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={isLoading}
+                            />
+                            <button
+                              type="submit"
+                              disabled={isLoading || !message.trim()}
+                              className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-8 py-4 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity text-lg font-semibold"
+                            >
+                              Send
+                            </button>
+                          </div>
+                        </form>
+                      </>
+                    )}
                   </motion.div>
                 </motion.div>
               )}

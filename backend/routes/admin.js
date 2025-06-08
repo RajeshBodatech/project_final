@@ -6,7 +6,7 @@ const Chat = require('../models/Chat');
 
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
-  if (req.userType !== 'admin') {
+  if (req.role !== 'admin') {
     return res.status(403).send({ error: 'Admin access required' });
   }
   next();
@@ -15,7 +15,7 @@ const isAdmin = (req, res, next) => {
 // Get all users
 router.get('/users', [auth, isAdmin], async (req, res) => {
   try {
-    const users = await User.find({ type: { $ne: 'admin' } });
+    const users = await User.find({ role: 'user' });
     res.status(200).send(users);
   } catch (error) {
     res.status(500).send({ error: 'Failed to fetch users' });
@@ -25,7 +25,7 @@ router.get('/users', [auth, isAdmin], async (req, res) => {
 // Get all doctors
 router.get('/doctors', [auth, isAdmin], async (req, res) => {
   try {
-    const doctors = await User.find({ type: 'doctor' });
+    const doctors = await User.find({ role: 'doctor' });
     res.status(200).send(doctors);
   } catch (error) {
     res.status(500).send({ error: 'Failed to fetch doctors' });
@@ -38,7 +38,7 @@ router.post('/doctors', [auth, isAdmin], async (req, res) => {
     const { phoneNumber, name, password } = req.body;
     
     // Check if doctor already exists
-    const existingDoctor = await User.findOne({ phoneNumber, type: 'doctor' });
+    const existingDoctor = await User.findOne({ phoneNumber, role: 'doctor' });
     if (existingDoctor) {
       return res.status(400).send({ error: 'Doctor already exists' });
     }
@@ -51,7 +51,7 @@ router.post('/doctors', [auth, isAdmin], async (req, res) => {
       phoneNumber,
       name,
       password: hashedPassword,
-      type: 'doctor'
+      role: 'doctor'
     });
     
     await doctor.save();
@@ -74,7 +74,7 @@ router.post('/admins', [auth, isAdmin], async (req, res) => {
         { email },
         { adminPhone }
       ],
-      type: 'admin'
+      role: 'admin'
     });
     
     if (existingAdmin) {
@@ -89,7 +89,7 @@ router.post('/admins', [auth, isAdmin], async (req, res) => {
       phoneNumber,
       name,
       password: hashedPassword,
-      type: 'admin',
+      role: 'admin',
       email,
       adminPhone
     });
@@ -136,7 +136,7 @@ router.put('/doctors/:doctorId', [auth, isAdmin], async (req, res) => {
     const { isActive } = req.body;
     
     const doctor = await User.findOneAndUpdate(
-      { userId: doctorId, type: 'doctor' },
+      { userId: doctorId, role: 'doctor' },
       { isActive },
       { new: true }
     );

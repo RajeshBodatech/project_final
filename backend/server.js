@@ -45,6 +45,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chats', require('./routes/chats'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/bot', require('./routes/botRoutes'));
 
 // Socket.io connection
 io.on('connection', (socket) => {

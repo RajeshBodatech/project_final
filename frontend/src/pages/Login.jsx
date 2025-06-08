@@ -26,8 +26,11 @@ const Login = () => {
           password: formData.password,
         }),
       });
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login response data:', data);
       if (response.ok && data.token) {
+        console.log('Saving token to localStorage:', data.token);
         localStorage.setItem('token', data.token);
         // Redirect based on role
         if (data.role === 'user') {
@@ -40,9 +43,11 @@ const Login = () => {
           navigate('/'); // fallback
         }
       } else {
+        console.log('Login failed, error:', data.error);
         alert(data.error || 'Login failed');
       }
     } catch (error) {
+      console.log('Login error:', error);
       alert('Login failed. Please try again.');
     }
   };

@@ -132,13 +132,17 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'User already exists', success: false });
     }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create user first
     const user = new User({
       userId: `user_${Date.now()}`,
       phoneNumber,
       name,
       email,
-      password: password,
+      password: hashedPassword,
       role: 'user',
       isActive: true,
       lastLogin: new Date()
@@ -191,17 +195,15 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-     console.log('Login attempt:', email, password);
+    console.log('Login attempt:', email);
     const user = await User.findOne({ email });
-    console.log('Found user:', user);
-    console.log('User Password:',user.password);
-    console.log('User password:', user ? user.password : 'No user found');
-    // If using bcrypt:
-    // if (!user || !await bcrypt.compare(password, user.password)) {
-    //   return res.status(400).json({ error: 'Invalid credentials', success: false });
-    // }
-    // For plain text password:
-    if (!user || user.password !== password) {
+    
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials', success: false });
+    }
+
+    // Compare password directly (plain text)
+    if (user.password !== password) {
       return res.status(400).json({ error: 'Invalid credentials', success: false });
     }
 
@@ -211,10 +213,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // user.lastLogin = new Date();
-    // await user.save();
-
-     // Use findOneAndUpdate instead of user.save()
+    // Update last login
     await User.findOneAndUpdate(
       { email },
       { $set: { lastLogin: new Date() } }
@@ -227,6 +226,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed', details: error.message });
   }
 });
