@@ -10,6 +10,8 @@ import Admin from './Dashboards/Admin';
 import Doctor from './Dashboards/Doctor';
 import User from './Dashboards/User';
 import Exercise from './pages/Exercise';
+import Chatbot from './pages/Chatbot';
+import Moral from './pages/Moral';
 const SplashScreen = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-300">
     <figure className="shadow-2xl rounded-3xl overflow-hidden transform hover:scale-105 transition-transform duration-500 bg-white p-4 mb-6">
@@ -34,7 +36,7 @@ const SplashScreen = () => (
 function AppContent() {
   const location = useLocation();
   // List dashboard routes where you want to hide the Navbar
-  const hideNavbar = ['/admin', '/doctor', '/user', '/exercise'].includes(location.pathname);
+  const hideNavbar = ['/admin', '/doctor', '/user', '/exercise','/chatbot', '/moral'].includes(location.pathname);
 
   return (
     <>
@@ -49,6 +51,8 @@ function AppContent() {
         <Route path="/doctor" element={<Doctor />} />
         <Route path="/user" element={<User />} />
         <Route path="/exercise" element={<Exercise />} />
+        <Route path="/chatbot" element={<Chatbot />} />
+        <Route path="/moral" element={<Moral />} />
         {/* Add more routes as needed */}
       </Routes>
     </>

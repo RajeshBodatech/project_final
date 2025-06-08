@@ -1,57 +1,19 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config/api';
 
-const roles = [
-  {
-    title: 'Admin',
-    img: '/images/img2.png',
-    value: 'admin',
-  },
-  {
-    title: 'User',
-    img: '/images/img.png',
-    value: 'user',
-  },
-  {
-    title: 'Doctor',
-    img: '/images/doctor.jpg',
-    value: 'doctor',
-  },
-];
-
 const logo = '/images/logo.jpg';
 
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.85, y: 40 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
-  exit: { opacity: 0, scale: 0.85, y: 40, transition: { duration: 0.2 } },
-};
-
 const Login = () => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(null);
   const [formData, setFormData] = useState({ email: '', password: '' });
-
-  const openModal = (role) => {
-    setSelectedRole(role);
-    setModalOpen(true);
-    setFormData({ email: '', password: '' });
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setSelectedRole(null);
-  };
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,7 +24,6 @@ const Login = () => {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          // If your backend expects phoneNumber instead of email, adjust accordingly
         }),
       });
       const data = await response.json();
@@ -78,7 +39,6 @@ const Login = () => {
         } else {
           navigate('/'); // fallback
         }
-        closeModal();
       } else {
         alert(data.error || 'Login failed');
       }
@@ -88,174 +48,136 @@ const Login = () => {
   };
 
   return (
-    <div className="mt-20 px-2 min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center bg-gray-100">
-      <motion.h2
-        className="text-2xl font-bold mb-6 text-gray-800"
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        Login As
-      </motion.h2>
-      <motion.div
-        className="flex flex-col sm:flex-row gap-4 mb-8"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: {},
-          visible: {
-            transition: {
-              staggerChildren: 0.12,
-            },
-          },
-        }}
-      >
-        {roles.map((role) => (
-          <motion.button
-            key={role.value}
-            onClick={() => openModal(role)}
-            className="flex flex-col items-center bg-white rounded-xl shadow-md px-6 py-4 hover:shadow-xl transition cursor-pointer border-2 border-transparent hover:border-blue-500 focus:outline-none hover:scale-105 duration-300"
-            whileHover={{ scale: 1.08, boxShadow: '0 8px 32px 0 rgba(59,130,246,0.15)' }}
-            whileTap={{ scale: 0.97 }}
-            variants={{
-              hidden: { opacity: 0, y: 30 },
-              visible: { opacity: 1, y: 0 },
-            }}
-          >
-            <motion.img
-              src={role.img}
-              alt={role.title}
-              className="w-14 h-14 rounded-full mb-2 object-cover shadow"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4 }}
-            />
-            <span className="font-semibold text-gray-700">{role.title}</span>
-          </motion.button>
-        ))}
-      </motion.div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-60 h-60 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-60 h-60 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+      </div>
 
-      {/* Modal */}
-      <AnimatePresence>
-        {modalOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30"
+      <motion.div
+        className="relative bg-white/80 backdrop-blur-lg rounded-xl shadow-xl p-5 w-full max-w-xs mx-4 border-2 border-indigo-200/50 hover:border-indigo-300/50 transition-colors duration-300"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="flex flex-col items-center mb-3">
+          <motion.div 
+            className="flex items-center space-x-2 mb-1 p-2 rounded-lg border border-indigo-100/50 bg-white/50"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <img src={logo} alt="Logo" className="w-8 h-8 object-contain rounded-lg shadow-md" />
+            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">HOPE I</h1>
+          </motion.div>
+          <motion.p 
+            className="text-xs text-gray-600"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            <motion.div
-              className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-xs sm:max-w-sm relative"
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <button
-                onClick={closeModal}
-                className="absolute top-2 right-3 text-2xl text-gray-400 hover:text-red-500 font-bold focus:outline-none transition-colors"
-                aria-label="Close"
-              >
-                ×
-              </button>
-              <div className="flex flex-col items-center mb-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-                  <h1 className="text-2xl font-bold text-gray-800">HOPE I</h1>
-                </div>
-                <p className="text-xs text-gray-500">Mental Health AI Chat Bot</p>
-              </div>
-              <motion.h2
-                className="text-xl font-semibold text-gray-800 mb-2 text-center"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                Log in
-              </motion.h2>
-              <motion.p
-                className="text-base font-medium text-gray-700 mb-4 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                {selectedRole.title}
-              </motion.p>
-              <motion.img
-                src={selectedRole.img}
-                alt={selectedRole.title}
-                className="w-20 h-16 mb-4 rounded-lg object-cover mx-auto"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.35 }}
-              />
-              <form className="w-full" onSubmit={handleSubmit}>
-                <div className="mb-2">
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 placeholder-gray-400 text-sm"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 placeholder-gray-400 text-sm"
-                    required
-                  />
-                </div>
-                <div className="text-right mb-3">
-                   <Link to="/fpassword" className="text-blue-600 hover:underline font-medium">
-                  Forgot password ?
-                </Link>
-                </div>
-                <motion.button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold text-base hover:bg-blue-700 transition duration-300 ease-in-out shadow-md"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  Log in
-                </motion.button>
-              </form>
-              <motion.p
-                className="mt-4 text-gray-600 text-xs text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                Don't have an account ?{' '}
-                <Link to="/signup" className="text-blue-600 hover:underline font-medium">
-                  Sign up
-                </Link>
-              </motion.p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Mental Health AI Chat Bot
+          </motion.p>
+        </div>
 
-      {/* Animations */}
+        <motion.h2
+          className="text-lg font-bold text-center mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          Welcome Back Login Here
+        </motion.h2>
+
+        <form className="space-y-2" onSubmit={handleSubmit}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <label className="block text-xs font-medium text-gray-700 mb-0.5">Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-3 py-1.5 rounded-lg border-2 border-indigo-100/50 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/30 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm text-sm"
+              required
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <label className="block text-xs font-medium text-gray-700 mb-0.5">Password</label>
+            <input
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-3 py-1.5 rounded-lg border-2 border-indigo-100/50 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/30 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm text-sm"
+              required
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="text-right"
+          >
+            <Link to="/fpassword" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200">
+              Forgot password?
+            </Link>
+          </motion.div>
+
+          <motion.button
+            type="submit"
+            className="w-full py-1.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 text-sm border-2 border-transparent hover:border-indigo-400/50"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            Sign In
+          </motion.button>
+        </form>
+
+        <motion.p
+          className="mt-3 text-center text-xs text-gray-600"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+        >
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200">
+            Sign up
+          </Link>
+        </motion.p>
+      </motion.div>
+
       <style>
         {`
-          @keyframes bounce {
-            0% { transform: scale(0.9);}
-            60% { transform: scale(1.05);}
-            100% { transform: scale(1);}
+          @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
           }
-          .animate-fadeIn {
-            animation: fadeIn 0.3s;
+          .animate-blob {
+            animation: blob 7s infinite;
           }
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px);}
-            to { opacity: 1; transform: translateY(0);}
+          .animation-delay-2000 {
+            animation-delay: 2s;
+          }
+          .animation-delay-4000 {
+            animation-delay: 4s;
           }
         `}
       </style>

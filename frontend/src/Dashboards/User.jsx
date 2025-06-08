@@ -127,7 +127,7 @@ const User = () => {
               >
                 <button
                   className="bg-gradient-to-r from-pink-400 to-pink-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold shadow-lg hover:scale-105 transition text-sm sm:text-base"
-                  onClick={() => handleNav("/games")}
+                  onClick={() => window.location.href = "https://llamacoder.together.ai/share/v2/N8tyVcicmdbn1e0s"}
                 >
                   Games
                 </button>
@@ -139,7 +139,7 @@ const User = () => {
                 </button>
                 <button
                   className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-3 sm:px-4 py-2 rounded-xl font-semibold shadow-lg hover:scale-105 transition text-sm sm:text-base"
-                  onClick={() => handleNav("/moral-stories")}
+                  onClick={() => handleNav("/moral")}
                 >
                   Moral Stories
                 </button>
