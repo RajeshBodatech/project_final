@@ -4,118 +4,114 @@ import { motion } from "framer-motion";
 
 const chatbotData = {
   main: [
-    { key: "doctor", label: "👩‍⚕️ I need a doctor" },
-    { key: "call", label: "�� Call for help" },
-    { key: "games", label: "🎮 Play Games", reply: "https://llamacoder.together.ai/share/v2/N8tyVcicmdbn1e0s" },
+    { key: "welcome", label: "🌟 Welcome to HOPE I" },
+    { key: "doctor", label: "👨‍⚕️ I need a doctor" },
+    { key: "emergency", label: "🚨 Emergency Help" },
+    { key: "express", label: "💭 Express Yourself" },
+    { key: "tools", label: "🧰 Wellness Tools" },
+    { key: "stories", label: "📖 Motivational Stories" },
   ],
   sub: {
-    calm: [
+    welcome: [
       {
-        key: "breathe",
-        label: "🫁 Breathing Exercise",
-        reply: "Let's try 4-7-8 breathing: Inhale 4s, hold 7s, exhale 8s.",
+        key: "about",
+        label: "ℹ️ About HOPE I",
+        reply: "HOPE I is your anonymous mental health companion, providing 24/7 support for emotional wellness, anti-depression, and suicide prevention. Your privacy and well-being are our top priorities.",
       },
       {
-        key: "meditate",
-        label: "🧘 Guided Meditation",
-        reply: "Here's a quick meditation: Close your eyes... relax your shoulders...",
+        key: "privacy",
+        label: "🔐 Privacy & Security",
+        reply: "Your conversations are completely anonymous and secure. We use end-to-end privacy protection with no data storage or personal tracking.",
       },
       {
-        key: "music",
-        label: "🎵 Calming Music",
-        reply: "Play soft ambient sounds or peaceful music. 🎧",
-      },
-    ],
-    talk: [
-      {
-        key: "anxious",
-        label: "😰 I'm anxious",
-        reply: "Anxiety can feel overwhelming. Want to try a grounding exercise?",
-      },
-      {
-        key: "sad",
-        label: "😢 I'm sad",
-        reply: "I'm really sorry you're feeling this way. You're not alone. ❤️",
-      },
-      {
-        key: "angry",
-        label: "😡 I'm angry",
-        reply: "Anger is valid. Want to try a cooling down technique?",
+        key: "features",
+        label: "✨ Key Features",
+        reply: "• Emotion Detection\n• Anonymous Chat\n• Stress Relief Tools\n• Multilingual Support\n• Doctor Appointments\n• Emergency Support\n• Journaling & Expression",
       },
     ],
     doctor: [
       {
         key: "book",
         label: "📅 Book Appointment",
-        reply: "Booking a doctor... Please wait, redirecting to available professionals.",
+        reply: "Connect with certified mental health professionals:\n• Clinical Psychologists\n• Licensed Counselors\n• Psychiatrists\n• General Health Doctors\nAll consultations are anonymous and confidential.",
       },
       {
         key: "nearby",
-        label: "📍 Nearest Hospital",
-        reply: "Fetching nearest mental health centers near you...",
+        label: "📍 Find Help Nearby",
+        reply: "Locating mental health centers and professionals in your area...",
       },
       {
         key: "video",
         label: "🎥 Video Consultation",
-        reply: "Initiating secure video call setup with a doctor...",
+        reply: "Setting up a secure, anonymous video consultation with a mental health professional...",
       },
     ],
-    call: [
+    emergency: [
       {
         key: "helpline",
-        label: "📞 Helpline Number",
-        reply: "Please call 📱 9152987821 or 112 for immediate help.",
+        label: "📞 Emergency Helpline",
+        reply: "For immediate support, call:\n• National Crisis Hotline: 9152987821\n• Emergency Services: 112\nYou're not alone. Help is available 24/7.",
       },
       {
-        key: "family",
-        label: "👪 Call Family/Friend",
-        reply: "Consider talking to someone you trust. Shall I send a reminder?",
+        key: "crisis",
+        label: "🆘 Crisis Support",
+        reply: "Connecting you with trained crisis counselors. Your safety is our priority. Please stay with me while we get you the help you need.",
       },
       {
         key: "volunteer",
         label: "❤️ Talk to Volunteer",
-        reply: "Connecting you with an emotional support volunteer...",
+        reply: "Connecting you with a trained emotional support volunteer. They're here to listen and support you.",
       },
     ],
-    quote: [
+    express: [
+      {
+        key: "journal",
+        label: "📝 Journal Your Thoughts",
+        reply: "Express yourself freely in your private journal. Your thoughts are safe here.",
+      },
+      {
+        key: "art",
+        label: "🎨 Art Therapy",
+        reply: "Try our color therapy and expression tools to help process your emotions.",
+      },
+      {
+        key: "chat",
+        label: "💬 Talk to HOPE I",
+        reply: "I'm here to listen. Share what's on your mind, and I'll respond with care and understanding.",
+      },
+    ],
+    tools: [
+      {
+        key: "breathe",
+        label: "🫁 Breathing Exercise",
+        reply: "Let's practice 4-7-8 breathing:\nInhale for 4 seconds\nHold for 7 seconds\nExhale for 8 seconds\nRepeat 4 times.",
+      },
+      {
+        key: "meditate",
+        label: "🧘 Guided Meditation",
+        reply: "Find a quiet space. Close your eyes. Let's begin a calming meditation session...",
+      },
+      {
+        key: "games",
+        label: "🎮 Stress Relief Games",
+        reply: "Choose from our collection of mental wellness games designed to help you relax and refocus.",
+      },
+    ],
+    stories: [
       {
         key: "motiv",
         label: "💪 Motivational",
-        reply: "You have survived 100% of your worst days.",
+        reply: "Remember: Every step forward, no matter how small, is progress. Your strength is greater than you know.",
       },
       {
         key: "peace",
         label: "🕊️ Peaceful",
-        reply: "Peace begins with a smile. — Mother Teresa",
+        reply: "In this moment, you are safe. You are valued. You are not alone in your journey.",
       },
       {
-        key: "funny",
-        label: "😂 Funny",
-        reply: "I'm not lazy, I'm just on energy-saving mode. 😄",
-      },
-    ],
-    track: [
-      {
-        key: "checkin",
-        label: "📊 Daily Mood Check-in",
-        reply: "Please rate your current mood on a scale of 1-10.",
-      },
-      {
-        key: "progress",
-        label: "📈 View My Progress",
-        reply: "Here's your mood tracking chart over the last week. 📊",
-      },
-    ],
-    journal: [
-      {
-        key: "entry",
-        label: "📝 Write Journal Entry",
-        reply: "You can now write about your thoughts and feelings here.",
-      },
-      {
-        key: "read",
-        label: "📖 Read Past Entries",
-        reply: "Fetching your secure journal history...",
+        key: "hope",
+        label: "✨ Stories of Hope",
+        reply: "Would you like to hear an inspiring story of resilience and recovery?",
       },
     ],
   },
