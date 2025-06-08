@@ -87,25 +87,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (phoneNumber, countryCode, name, password, userType) => {
+  const register = async (phoneNumber, name, email, password, userType, permissions) => {
     try {
       setError('');
       const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         phoneNumber,
-        countryCode,
         name,
+        email,
         password,
-        userType
+        userType,
+        permissions
       });
       
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        setUser(response.data.user);
-      }
-      return response.data;
+      // Only return the success response, don't set any auth state
+      return {
+        success: true,
+        message: 'Registration successful'
+      };
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
-      throw err;
+      return {
+        success: false,
+        error: err.response?.data?.error || 'Registration failed'
+      };
     }
   };
 

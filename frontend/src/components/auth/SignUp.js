@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { FaCheck } from 'react-icons/fa';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -11,10 +12,26 @@ const Signup = () => {
     countryCode: '91',
     otp: '',
     name: '',
+    email: '',
     password: '',
     userType: 'user'
   });
   const [loading, setLoading] = useState(false);
+  const [permissions, setPermissions] = useState(null);
+  const [permissionError, setPermissionError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // Check for permissions on component mount
+  useEffect(() => {
+    const storedPermissions = localStorage.getItem('userPermissions');
+    if (!storedPermissions) {
+      // If no permissions found, redirect to home page
+      navigate('/');
+      return;
+    }
+    const parsedPermissions = JSON.parse(storedPermissions);
+    setPermissions(parsedPermissions);
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,15 +105,7 @@ const Signup = () => {
       
       if (verifyResponse.success) {
         console.log('OTP verification successful:', verifyResponse);
-        // Complete registration
-        const registerResponse = await register(formData.phoneNumber, formData.countryCode, formData.name, formData.password, formData.userType);
-        if (registerResponse.success) {
-          console.log('Registration successful:', registerResponse);
-          navigate('/dashboard');
-        } else {
-          console.error('Registration failed:', registerResponse);
-          setError(registerResponse.error || 'Failed to register');
-        }
+        setStep(3);
       } else {
         console.error('OTP verification failed:', verifyResponse);
         setError(verifyResponse.error || 'Invalid OTP');
@@ -104,6 +113,141 @@ const Signup = () => {
     } catch (err) {
       console.error('Verification error:', err);
       setError(err.response?.data?.error || 'Failed to verify OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestPermissions = async () => {
+    try {
+      setLoading(true);
+      setPermissionError('');
+      console.log('Starting permission requests...');
+
+      // Check if we're in a secure context
+      if (!window.isSecureContext) {
+        throw new Error('Permissions require a secure context (HTTPS)');
+      }
+
+      const newPermissions = {
+        microphone: false,
+        camera: false,
+        location: false,
+        audio: false
+      };
+
+      // Request microphone and audio permissions
+      try {
+        console.log('Requesting microphone permission...');
+        const audioStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true,
+          video: false 
+        });
+        audioStream.getTracks().forEach(track => track.stop());
+        newPermissions.microphone = true;
+        newPermissions.audio = true;
+        console.log('Microphone permission granted');
+      } catch (err) {
+        console.error('Microphone permission error:', err);
+        setPermissionError('Please allow microphone access to continue');
+        return false;
+      }
+
+      // Request camera permission
+      try {
+        console.log('Requesting camera permission...');
+        const videoStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: false,
+          video: true 
+        });
+        videoStream.getTracks().forEach(track => track.stop());
+        newPermissions.camera = true;
+        console.log('Camera permission granted');
+      } catch (err) {
+        console.error('Camera permission error:', err);
+        setPermissionError('Please allow camera access to continue');
+        return false;
+      }
+
+      // Request location permission
+      try {
+        console.log('Requesting location permission...');
+        await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('Location permission granted:', position);
+              resolve(position);
+            },
+            (error) => {
+              console.error('Location permission denied:', error);
+              reject(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            }
+          );
+        });
+        newPermissions.location = true;
+        console.log('Location permission granted');
+      } catch (err) {
+        console.error('Location permission error:', err);
+        setPermissionError('Please allow location access to continue');
+        return false;
+      }
+
+      // Store permissions in localStorage
+      localStorage.setItem('userPermissions', JSON.stringify(newPermissions));
+      setPermissions(newPermissions);
+      console.log('All permissions granted:', newPermissions);
+      return true;
+    } catch (error) {
+      console.error('Permission request error:', error);
+      setPermissionError(`Failed to request permissions: ${error.message}`);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Format phone number
+      const formattedNumber = `+${formData.countryCode}${formData.phoneNumber}`;
+      console.log('Registering user:', formattedNumber);
+      
+      // Complete registration with permissions
+      const registerResponse = await register(
+        formattedNumber,
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.userType,
+        permissions
+      );
+
+      if (registerResponse.success) {
+        console.log('Registration successful:', registerResponse);
+        // Clear permissions from localStorage
+        localStorage.removeItem('userPermissions');
+        // Show success message
+        setShowSuccess(true);
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          setShowSuccess(false);
+          navigate('/login', { replace: true });
+        }, 2000);
+      } else {
+        console.error('Registration failed:', registerResponse);
+        setError(registerResponse.error || 'Failed to register');
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError(err.response?.data?.error || 'Failed to register');
     } finally {
       setLoading(false);
     }
@@ -121,6 +265,12 @@ const Signup = () => {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
             {error}
+          </div>
+        )}
+
+        {permissionError && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+            {permissionError}
           </div>
         )}
 
@@ -189,7 +339,7 @@ const Signup = () => {
 
             <div>
               <button
-                onClick={verifyOTP}
+                onClick={verify}
                 disabled={loading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
@@ -210,6 +360,15 @@ const Signup = () => {
                 placeholder="Full Name"
                 onChange={handleChange}
                 value={formData.name}
+              />
+              <input
+                name="email"
+                type="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email Address"
+                onChange={handleChange}
+                value={formData.email}
               />
               <input
                 name="password"
@@ -240,8 +399,18 @@ const Signup = () => {
                 disabled={loading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {loading ? 'Registering...' : 'Register'}
+                {loading ? 'Processing...' : 'Sign Up'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {showSuccess && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 text-center">
+              <FaCheck className="text-green-500 text-5xl mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Successfully Signed Up!</h3>
+              <p className="text-gray-600">Redirecting to login page...</p>
             </div>
           </div>
         )}
@@ -250,4 +419,4 @@ const Signup = () => {
   );
 };
 
-export default SignUp;
+export default Signup;

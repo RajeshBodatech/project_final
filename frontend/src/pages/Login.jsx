@@ -29,10 +29,16 @@ const Login = () => {
       console.log('Login response status:', response.status);
       const data = await response.json();
       console.log('Login response data:', data);
+      
       if (response.ok && data.token) {
         console.log('Saving token to localStorage:', data.token);
         localStorage.setItem('token', data.token);
-        // Redirect based on role
+        
+        // Show success message
+        alert('Login successful! Redirecting...');
+        
+        // Redirect based on role after a short delay
+        setTimeout(() => {
         if (data.role === 'user') {
           navigate('/user');
         } else if (data.role === 'admin') {
@@ -42,13 +48,14 @@ const Login = () => {
         } else {
           navigate('/'); // fallback
         }
+        }, 1000);
       } else {
         console.log('Login failed, error:', data.error);
-        alert(data.error || 'Login failed');
+        alert(data.error || 'Invalid email or password. Please try again.');
       }
     } catch (error) {
       console.log('Login error:', error);
-      alert('Login failed. Please try again.');
+      alert('Login failed. Please check your internet connection and try again.');
     }
   };
 

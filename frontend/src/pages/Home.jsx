@@ -1,10 +1,122 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Chatbot from './Chatbot';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Home = () => {
   const [showChatbot, setShowChatbot] = useState(false);
+  const [permissionError, setPermissionError] = useState('');
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
+  const navigate = useNavigate();
+
+  // Check if browser supports required APIs
+  useEffect(() => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('getUserMedia is not supported in this browser');
+      setPermissionError('Your browser does not support required features. Please use a modern browser.');
+    }
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported in this browser');
+      setPermissionError('Your browser does not support location services. Please use a modern browser.');
+    }
+  }, []);
+
+  const handleSignUp = async () => {
+    try {
+      setIsRequestingPermissions(true);
+      setPermissionError('');
+      console.log('Starting permission requests...');
+
+      // Check if we're in a secure context
+      if (!window.isSecureContext) {
+        throw new Error('Permissions require a secure context (HTTPS)');
+      }
+
+      // Request permissions one by one
+      const permissions = {
+        microphone: false,
+        camera: false,
+        location: false,
+        audio: false
+      };
+
+      // Request microphone and audio permissions
+      try {
+        console.log('Requesting microphone permission...');
+        const audioStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true,
+          video: false 
+        });
+        audioStream.getTracks().forEach(track => track.stop());
+        permissions.microphone = true;
+        permissions.audio = true;
+        console.log('Microphone permission granted');
+      } catch (err) {
+        console.error('Microphone permission error:', err);
+        setPermissionError('Please allow microphone access to continue');
+        setIsRequestingPermissions(false);
+        return;
+      }
+
+      // Request camera permission
+      try {
+        console.log('Requesting camera permission...');
+        const videoStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: false,
+          video: true 
+        });
+        videoStream.getTracks().forEach(track => track.stop());
+        permissions.camera = true;
+        console.log('Camera permission granted');
+      } catch (err) {
+        console.error('Camera permission error:', err);
+        setPermissionError('Please allow camera access to continue');
+        setIsRequestingPermissions(false);
+        return;
+      }
+
+      // Request location permission
+      try {
+        console.log('Requesting location permission...');
+        await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('Location permission granted:', position);
+              resolve(position);
+            },
+            (error) => {
+              console.error('Location permission denied:', error);
+              reject(error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            }
+          );
+        });
+        permissions.location = true;
+        console.log('Location permission granted');
+      } catch (err) {
+        console.error('Location permission error:', err);
+        setPermissionError('Please allow location access to continue');
+        setIsRequestingPermissions(false);
+        return;
+      }
+
+      // Store permissions in localStorage
+      localStorage.setItem('userPermissions', JSON.stringify(permissions));
+      console.log('All permissions granted:', permissions);
+
+      // Navigate to signup page
+      navigate('/signup');
+    } catch (error) {
+      console.error('Permission request error:', error);
+      setPermissionError(`Failed to request permissions: ${error.message}`);
+    } finally {
+      setIsRequestingPermissions(false);
+    }
+  };
 
   return (
     <div className="mt-20 px-4">
@@ -106,20 +218,26 @@ const Home = () => {
             <p className="text-base sm:text-lg text-gray-700 mb-6">
               Talk to our AI-powered mental health assistant 24/7 — safely, privately, and supportively.
             </p>
-            <div className="flex justify-center md:justify-start gap-4">
-              <Link
-                to="/login"
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <button
+                onClick={() => navigate('/login')}
                 className="bg-teal-500 text-white px-6 py-2 rounded-xl font-semibold text-base hover:bg-teal-600 flex items-center justify-center"
               >
                 Start Chat
-              </Link>
-              <Link
-                to="/about"
-                className="bg-blue-700 text-white px-6 py-2 rounded-xl font-semibold text-base hover:bg-blue-800 flex items-center justify-center"
+              </button>
+             
+              <button
+                onClick={() => navigate('/about')}
+                className="bg-gray-700 text-white px-6 py-2 rounded-xl font-semibold text-base hover:bg-gray-800 flex items-center justify-center"
               >
                 Learn More
-              </Link>
+              </button>
             </div>
+            {permissionError && (
+              <div className="mt-4 text-red-500 text-sm text-center">
+                {permissionError}
+              </div>
+            )}
           </div>
 
           {/* Image Section */}
@@ -152,14 +270,14 @@ const Home = () => {
             <div className="text-orange-500 text-3xl mb-2">🧘</div>
             <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Guided Exercises</h3>
             <p className="text-xs sm:text-sm text-gray-700">
-              Try calming meditations & breathing.
+              Practice mindfulness and relaxation.
             </p>
           </div>
           <div className="bg-white shadow-xl rounded-xl p-4 text-center h-[120px] flex flex-col justify-center">
-            <div className="text-blue-900 text-3xl mb-2">🔒</div>
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">100% Private</h3>
+            <div className="text-purple-500 text-3xl mb-2">🔒</div>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Private & Secure</h3>
             <p className="text-xs sm:text-sm text-gray-700">
-              Your data is secure & confidential.
+              Your data is always protected.
             </p>
           </div>
         </div>

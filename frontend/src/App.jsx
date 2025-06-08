@@ -12,6 +12,8 @@ import User from './Dashboards/User';
 import Exercise from './pages/Exercise';
 import Chatbot from './pages/Chatbot';
 import Moral from './pages/Moral';
+import PermissionRequest from './components/PermissionRequest';
+
 const SplashScreen = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-blue-200 to-blue-300">
     <figure className="shadow-2xl rounded-3xl overflow-hidden transform hover:scale-105 transition-transform duration-500 bg-white p-4 mb-6">
@@ -53,7 +55,7 @@ function AppContent() {
         <Route path="/exercise" element={<Exercise />} />
         <Route path="/chatbot" element={<Chatbot />} />
         <Route path="/moral" element={<Moral />} />
-        {/* Add more routes as needed */}
+        <Route path="/permissions" element={<PermissionRequest />} />
       </Routes>
     </>
   );
@@ -61,7 +63,6 @@ function AppContent() {
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 8000);

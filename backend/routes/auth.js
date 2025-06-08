@@ -5,6 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Permission = require('../models/Permission');
 const auth = require('../middleware/auth');
 const twilio = require('twilio');
 
@@ -20,6 +21,9 @@ if (
   console.error("❌ Missing environment variables. Check .env setup.");
   process.exit(1);
 }
+
+// Store verified OTPs temporarily (in production, use Redis or similar)
+const verifiedOTPs = new Map();
 
 // 📲 Request OTP (uses utility)
 router.post('/request-otp', async (req, res) => {
@@ -87,6 +91,13 @@ router.post('/verify-otp', async (req, res) => {
     console.log('OTP verification result:', result); // Debug log
 
     if (result.success) {
+      // Store the verification status
+      verifiedOTPs.set(cleanPhoneNumber, {
+        otp,
+        timestamp: Date.now(),
+        verified: true
+      });
+      
       res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
@@ -112,8 +123,8 @@ router.post('/verify-otp', async (req, res) => {
 // 🧾 Register User
 router.post('/register', async (req, res) => {
   try {
-    let { phoneNumber, name, email, password, otp } = req.body;
-    console.log('Registration request:', { phoneNumber, name, email, otp }); // Debug log
+    let { phoneNumber, name, email, password, otp, permissions } = req.body;
+    console.log('Registration request:', { phoneNumber, name, email, otp, permissions }); // Debug log
 
     // Clean phone number format
     phoneNumber = phoneNumber.replace(/^\+/, '').replace(/[^0-9]/g, '');
@@ -150,6 +161,16 @@ router.post('/register', async (req, res) => {
 
     await user.save();
     console.log('User created successfully:', user.userId); // Debug log
+
+    // Store permissions if provided
+    if (permissions) {
+      const userPermissions = new Permission({
+        userId: user.userId,
+        ...permissions
+      });
+      await userPermissions.save();
+      console.log('User permissions saved:', user.userId); // Debug log
+    }
 
     // Generate token
     const token = jwt.sign(
@@ -199,11 +220,14 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email });
     
     if (!user) {
+      console.log('User not found:', email);
       return res.status(400).json({ error: 'Invalid credentials', success: false });
     }
 
-    // Compare password directly (plain text)
-    if (user.password !== password) {
+    // Compare password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log('Password mismatch for user:', email);
       return res.status(400).json({ error: 'Invalid credentials', success: false });
     }
 
@@ -222,12 +246,13 @@ router.post('/login', async (req, res) => {
     res.status(200).json({
       token,
       userId: user.userId,
-      role: user.role
+      role: user.role,
+      success: true
     });
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed', details: error.message });
+    res.status(500).json({ error: 'Login failed', details: error.message, success: false });
   }
 });
 
@@ -256,6 +281,72 @@ router.get('/me', async (req, res) => {
     });
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+// Reset password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { phoneNumber, otp, newPassword } = req.body;
+    console.log('Reset password request:', { phoneNumber, otp }); // Debug log
+
+    if (!phoneNumber || !otp || !newPassword) {
+      return res.status(400).json({
+        error: 'Phone number, OTP, and new password are required',
+        success: false
+      });
+    }
+
+    // Clean phone number format
+    const cleanPhoneNumber = phoneNumber.replace(/^\+/, '').replace(/[^0-9]/g, '');
+    console.log('Cleaned phone number:', cleanPhoneNumber); // Debug log
+
+    // Find user by phone number first
+    const user = await User.findOne({ phoneNumber: cleanPhoneNumber });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Check if OTP was previously verified
+    const verifiedOTP = verifiedOTPs.get(cleanPhoneNumber);
+    const isOTPValid = verifiedOTP && 
+                      verifiedOTP.otp === otp && 
+                      verifiedOTP.verified && 
+                      (Date.now() - verifiedOTP.timestamp) < 300000; // 5 minutes validity
+
+    if (!isOTPValid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired OTP'
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user's password
+    user.password = hashedPassword;
+    await user.save();
+    console.log('Password updated successfully for user:', user.userId);
+
+    // Remove the verified OTP
+    verifiedOTPs.delete(cleanPhoneNumber);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful'
+    });
+
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to reset password'
+    });
   }
 });
 

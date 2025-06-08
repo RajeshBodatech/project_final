@@ -1,6 +1,6 @@
 // Sign Up Page with Role Selection and OTP Verification
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { API_BASE_URL, API_ENDPOINTS } from '../config/api';
 
@@ -46,6 +46,9 @@ const Contact = () => {
   const [otpValid, setOtpValid] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   // Always format phone as 91XXXXXXXXXX
   const getPhoneWithCode = () => {
@@ -148,44 +151,69 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!otpValid) {
-      setOtpError('Please verify OTP before signing up.');
-      return;
-    }
+    setLoading(true);
+    setError('');
+
     try {
-      const phoneWithCode = getPhoneWithCode();
-      console.log('Submitting registration with:', { 
-        phoneNumber: phoneWithCode,
-        name: formData.fullname,
-        email: formData.email
-      }); // Debug log
+      // Get permissions from localStorage
+      const permissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+      
+      // Format the data to match backend expectations
+      const registrationData = {
+        phoneNumber: getPhoneWithCode(), // Use the formatted phone number
+        name: formData.fullname,         // Map fullname to name
+        email: formData.email,
+        password: formData.password,
+        otp: formData.otp,
+        permissions
+      };
+
+      console.log('Sending registration data:', registrationData); // Debug log
 
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.fullname,
-          email: formData.email,
-          password: formData.password,
-          phoneNumber: phoneWithCode,
-          otp: formData.otp
-        })
+        body: JSON.stringify(registrationData)
       });
 
       const data = await response.json();
-      console.log('Registration response:', data); // Debug log
+      console.log('Registration response:', data);
 
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        window.location.href = '/';
+      // Check if user was created successfully
+      if (data.userId || response.ok) {
+        // Clear permissions from localStorage after successful registration
+        localStorage.removeItem('userPermissions');
+        
+        // Show success message in a more user-friendly way
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+        successMessage.innerHTML = `
+          <div class="flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Successfully signed up! Redirecting to login page...</span>
+          </div>
+        `;
+        document.body.appendChild(successMessage);
+        
+        // Remove the success message after 2 seconds
+        setTimeout(() => {
+          successMessage.remove();
+          // Redirect to login page
+          navigate('/login', { replace: true });
+        }, 2000);
       } else {
-        setOtpError(data.error || 'Registration failed');
+        // Handle error response
+        setError(data.error || 'Registration failed');
       }
     } catch (error) {
-      console.error('Registration error:', error); // Debug log
-      setOtpError('Registration failed. Please try again.');
+      console.error('Registration error:', error);
+      setError('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -355,6 +383,13 @@ const Contact = () => {
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px);}
             to { opacity: 1; transform: translateY(0);}
+          }
+          @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
           }
         `}
       </style>
