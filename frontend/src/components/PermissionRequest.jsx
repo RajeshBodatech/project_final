@@ -45,8 +45,58 @@ const PermissionRequest = () => {
   const requestLocationPermission = async () => {
     try {
       const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        });
       });
+
+      // Get location name using reverse geocoding with a more specific format
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      // Extract city and state from the address
+      const address = data.address;
+      let locationName = '';
+      
+      if (address) {
+        // Try to get city and state
+        const city = address.city || address.town || address.village || '';
+        const state = address.state || '';
+        locationName = city ? `${city}, ${state}` : state;
+      }
+      
+      // If we couldn't get a good location name, use coordinates
+      if (!locationName) {
+        locationName = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+      }
+
+      // Store both coordinates and location name
+      const locationData = {
+        name: locationName,
+        coordinates: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        },
+        fullAddress: data.display_name
+      };
+
+      // Update permissions with actual location data
+      setPermissions(prev => ({
+        ...prev,
+        location: locationData
+      }));
+
+      // Update localStorage with the new location data
+      const updatedPermissions = {
+        ...permissions,
+        location: locationData
+      };
+      localStorage.setItem('userPermissions', JSON.stringify(updatedPermissions));
+
       return true;
     } catch (err) {
       console.error('Location permission error:', err);
@@ -76,10 +126,12 @@ const PermissionRequest = () => {
     }
 
     if (granted) {
-      setPermissions(prev => ({
-        ...prev,
-        [permission]: true
-      }));
+      if (permission !== 'location') { // Don't set location here as it's already set in requestLocationPermission
+        setPermissions(prev => ({
+          ...prev,
+          [permission]: true
+        }));
+      }
     } else {
       setError(`Failed to get ${permission} permission. Please try again.`);
     }
@@ -91,7 +143,9 @@ const PermissionRequest = () => {
     setError('');
 
     // Check if all permissions are granted
-    const allGranted = Object.values(permissions).every(Boolean);
+    const allGranted = Object.values(permissions).every(perm => 
+      typeof perm === 'object' ? true : Boolean(perm)
+    );
     if (!allGranted) {
       setError('Please grant all permissions to continue');
       setLoading(false);

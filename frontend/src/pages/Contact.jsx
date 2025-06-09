@@ -48,6 +48,7 @@ const Contact = () => {
   const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [locationPermission, setLocationPermission] = useState(false);
   const navigate = useNavigate();
 
   // Always format phone as 91XXXXXXXXXX
@@ -149,6 +150,42 @@ const Contact = () => {
     }
   };
 
+  const handleLocationPermission = async () => {
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+      });
+
+      // Get location name using reverse geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+      );
+      const data = await response.json();
+      const locationName = data.display_name || `${position.coords.latitude}, ${position.coords.longitude}`;
+
+      // Store both coordinates and location name
+      const locationData = {
+        name: locationName,
+        coordinates: {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }
+      };
+
+      // Update permissions with actual location data
+      const updatedPermissions = {
+        ...permissions,
+        location: locationData
+      };
+      setPermissions(updatedPermissions);
+      localStorage.setItem('userPermissions', JSON.stringify(updatedPermissions));
+      setLocationPermission(true);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setError('Failed to get location. Please try again.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -157,6 +194,43 @@ const Contact = () => {
     try {
       // Get permissions from localStorage
       const permissions = JSON.parse(localStorage.getItem('userPermissions') || '{}');
+      
+      // If location is just a boolean, get the actual location data
+      if (permissions.location === true || !permissions.location.coordinates) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            });
+          });
+
+          // Get location name using reverse geocoding
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`
+          );
+          const data = await response.json();
+          const locationName = data.display_name || `${position.coords.latitude}, ${position.coords.longitude}`;
+
+          // Update permissions with actual location data
+          permissions.location = {
+            name: locationName,
+            coordinates: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }
+          };
+
+          // Update localStorage with the new location data
+          localStorage.setItem('userPermissions', JSON.stringify(permissions));
+        } catch (error) {
+          console.error('Error getting location:', error);
+          setError('Failed to get location. Please try again.');
+          setLoading(false);
+          return;
+        }
+      }
       
       // Format the data to match backend expectations
       const registrationData = {

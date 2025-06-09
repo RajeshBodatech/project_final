@@ -216,18 +216,74 @@ const Signup = () => {
       setLoading(true);
       setError('');
       
+      // Get current location during registration
+      let locationData;
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          });
+        });
+
+        // Get location name using reverse geocoding with a more specific format
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        // Extract city and state from the address
+        const address = data.address;
+        let locationName = '';
+        
+        if (address) {
+          // Try to get city and state
+          const city = address.city || address.town || address.village || '';
+          const state = address.state || '';
+          locationName = city ? `${city}, ${state}` : state;
+        }
+        
+        // If we couldn't get a good location name, use coordinates
+        if (!locationName) {
+          locationName = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+        }
+
+        locationData = {
+          name: locationName,
+          coordinates: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          },
+          fullAddress: data.display_name // Store full address separately if needed
+        };
+
+        console.log('Location data:', locationData);
+      } catch (error) {
+        console.error('Error getting location:', error);
+        setError('Failed to get location. Please try again.');
+        setLoading(false);
+        return;
+      }
+      
       // Format phone number
       const formattedNumber = `+${formData.countryCode}${formData.phoneNumber}`;
       console.log('Registering user:', formattedNumber);
       
-      // Complete registration with permissions
+      // Update permissions with current location
+      const updatedPermissions = {
+        ...permissions,
+        location: locationData
+      };
+      
+      // Complete registration with updated permissions
       const registerResponse = await register(
         formattedNumber,
         formData.name,
         formData.email,
         formData.password,
         formData.userType,
-        permissions
+        updatedPermissions
       );
 
       if (registerResponse.success) {

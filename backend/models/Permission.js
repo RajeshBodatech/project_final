@@ -15,8 +15,24 @@ const permissionSchema = new mongoose.Schema({
     default: false
   },
   location: {
-    type: Boolean,
-    default: false
+    name: {
+      type: String,
+      required: true
+    },
+    coordinates: {
+      latitude: {
+        type: Number,
+        required: true
+      },
+      longitude: {
+        type: Number,
+        required: true
+      }
+    },
+    fullAddress: {
+      type: String,
+      required: false
+    }
   },
   audio: {
     type: Boolean,

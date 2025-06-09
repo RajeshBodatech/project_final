@@ -164,6 +164,42 @@ router.post('/register', async (req, res) => {
 
     // Store permissions if provided
     if (permissions) {
+      // Validate and format location data
+      if (permissions.location) {
+        if (typeof permissions.location === 'boolean') {
+          permissions.location = {
+            name: 'Location permission granted',
+            coordinates: {
+              latitude: 0,
+              longitude: 0
+            }
+          };
+        } else if (typeof permissions.location === 'object') {
+          // Ensure location data has the required fields
+          if (!permissions.location.name || !permissions.location.coordinates) {
+            permissions.location = {
+              name: 'Location permission granted',
+              coordinates: {
+                latitude: 0,
+                longitude: 0
+              }
+            };
+          } else {
+            // Ensure coordinates are numbers and format location name
+            permissions.location = {
+              name: permissions.location.name.split(',')[0] + ', ' + permissions.location.name.split(',')[1],
+              coordinates: {
+                latitude: Number(permissions.location.coordinates.latitude) || 0,
+                longitude: Number(permissions.location.coordinates.longitude) || 0
+              },
+              fullAddress: permissions.location.fullAddress
+            };
+          }
+        }
+      }
+      
+      console.log('Saving permissions with location:', permissions.location);
+      
       const userPermissions = new Permission({
         userId: user.userId,
         ...permissions
